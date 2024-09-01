@@ -36,9 +36,10 @@ def create_cli(pyvite_factory: Callable[[], Forge]=default):
     @cli.command(help="Create a new project based on a template")
     def project(
         template: str = Argument(None, help="The template name to use"),
-        var_files: str = Option("forge.vars.json", help="Use the configuration file to set the template"),
-        use_config: bool = Option(True, help="Use the configuration file to set the template")
-                ):
+        var_file: str = Option("forge.vars.json", help="Use the configuration file to set the template"),
+        use_vars: bool = Option(True, help="Use variables from a file"),
+        save_vars: bool = Option(False, help="Save variables to a file"),
+        ):
         selected_template = None
         if not template:
             templates = app.templates_list()
@@ -53,8 +54,8 @@ def create_cli(pyvite_factory: Callable[[], Forge]=default):
             return
         
         data = {}
-        if os.path.exists(var_files) and use_config:
-            with open(var_files, "r", encoding="utf-8") as f:
+        if os.path.exists(var_file) and use_vars:
+            with open(var_file, "r", encoding="utf-8") as f:
                 data = json.loads(f.read())
         
         data.update(
@@ -73,6 +74,10 @@ def create_cli(pyvite_factory: Callable[[], Forge]=default):
         ) as progress:
             progress.add_task("Creating project...", None)
             result = app.render_template(selected_template, path, data)
+
+        if save_vars:
+            with open(var_file, "w", encoding="utf-8") as f:
+                f.write(json.dumps(data, indent=4))
 
         for file in result:
             rich.print(f"[green]{file}[/green] created")
