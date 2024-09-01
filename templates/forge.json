@@ -1,0 +1,35 @@
+{
+    "templates": [
+        {
+            "name": "flask.api",
+            "description": "Flask REST API base project (MVC structure)",
+            "src": "flask/api",
+            "variables": {
+                "project_name": "str",
+                "project_description": "str",
+                "project_author": "str"
+            },
+            "processors": {
+                "project_slug": {
+                    "var": "project_name",
+                    "name": "snake"
+                }
+            }
+        },
+        {
+            "name": "flask.mod",
+            "description": "Flask module (MVC structure)",
+            "src": "flask/module",
+            "variables": {
+                "module_name": "str",
+                "project_slug": "str"
+            },
+            "processors": {
+                "module_camel_case": {
+                    "var": "module_name",
+                    "name": "pascal"
+                }
+            }
+        }
+    ]
+}
