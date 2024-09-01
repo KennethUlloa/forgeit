@@ -30,6 +30,22 @@
                     "name": "pascal"
                 }
             }
+        },
+        {
+            "name": "package",
+            "description": "Python package",
+            "src": "package",
+            "variables": {
+                "project_name": "str",
+                "version": "str",
+                "description": "str",
+                "author": "str",
+                "author_email": "str",
+                "readme": "str",
+                "python_version": "str",
+                "homepage": "str",
+                "project_script": "str"
+            }
         }
     ]
 }
