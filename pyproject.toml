@@ -1,0 +1,29 @@
+[project]
+name = "forgeit"
+version = "0.1.0"
+authors = [
+  { name="Kenneth Ulloa", email="ulloakenth@gmail.com" },
+]
+description = "A simple cli tool to generate python project based on a template"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+keywords = ["cli", "python", "template", "project"]
+dependencies = [
+"Jinja2>=3.1.4",
+"typer>=0.12.5"
+]
+
+[project.urls]
+Homepage = "https://github.com/KennethUlloa/forgeit"
+
+[project.scripts]
+forgeit = "forgeit.cli:run"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
