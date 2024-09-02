@@ -20,7 +20,8 @@ TYPE_MAP = {
     "str": str,
     "int": int,
     "float": float,
-    "bool": bool
+    "bool": bool,
+    "list": list
 }
 
 def map_processor(data: dict, target: str) -> dict:

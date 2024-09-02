@@ -81,3 +81,10 @@ pip install dist/<generated package>.tar.gz
 # or
 pip install dist/<generated package>.whl
 ```
+### Variable types
+When you define the variables for a template, you must declare their types in order to the tool to parse it.
+- `str` for strings
+- `list` for lists (each element will be parsed as string)
+- `float` for float point numbers
+- `int` for integers
+- `bool` for booleans

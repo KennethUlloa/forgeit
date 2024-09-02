@@ -8,18 +8,20 @@ description = "{{ description }}"
 readme = "{{ readme }}"
 requires-python = ">={{ python_version }}"
 classifiers = [
-    "Add the classifiers here"
+    {% for cl in classifiers %}"{{ cl }}"{% if loop.index < classifiers|length %},{% endif %}{% endfor %}
 ]
-keywords = ["python"]
+keywords = [
+  {% for kw in keywords %}"{{ kw }}"{% if loop.index < keywords|length %},{% endif %}{% endfor %}
+]
 dependencies = [
-"<dependency1>",
+    {% for dep in dependencies %}"{{ dep }}"{% if loop.index < dependencies|length %},{% endif %}{% endfor %}
 ]
 
 [project.urls]
 Homepage = "{{ homepage }}"
 
 [project.scripts]
-forgeit = "{{ project_script }}"
+{{ script_name }} = "{{project_slug}}.{{ script_path }}"
 
 [build-system]
 requires = ["setuptools>=61.0"]

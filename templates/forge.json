@@ -44,7 +44,17 @@
                 "readme": "str",
                 "python_version": "str",
                 "homepage": "str",
-                "project_script": "str"
+                "script_name": "str",
+                "script_path": "str",
+                "classifiers": "list",
+                "keywords": "list",
+                "dependencies": "list"
+            },
+            "processors": {
+                "project_slug": {
+                    "var": "project_name",
+                    "name": "snake"
+                }
             }
         }
     ]
