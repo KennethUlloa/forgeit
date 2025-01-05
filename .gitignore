@@ -16,3 +16,6 @@ dist/
 
 # Development
 dev*
+local/*
+local_*.*
+**/*.local.*
