@@ -1,19 +1,19 @@
 import os
 import glob
-from typing import Callable
-from ..base import ITemplate, PostProcessor, TypeCallable
+from typing import Callable, Type
+from .base import ITemplate, PostProcessor
 
 
-class FileTreeTemplate(ITemplate):
+class FolderTemplate(ITemplate):
     def __init__(
         self,
         id: str,
         name: str,
         description: str,
-        variables: dict[str, TypeCallable],
-        processors: dict[str, PostProcessor],
         path: str,
-        pattern: str,
+        variables: dict[str, Type] = {},
+        processors: list[PostProcessor] = [],
+        pattern: str = None,
         remove: str = "",
         encoding: str = "utf-8",
     ):
@@ -43,8 +43,6 @@ class FileTreeTemplate(ITemplate):
 
             return removed_path, content
 
-        pattern = os.path.join(self.path, self.pattern)
-
         if not self.pattern:
             all_files = []
             for root, _, files in os.walk(self.path):
@@ -52,6 +50,8 @@ class FileTreeTemplate(ITemplate):
                     all_files.append(create_callable(os.path.join(root, file)))
             return all_files
 
+        pattern = os.path.join(self.path, self.pattern)
+        
         return [
             create_callable(f)
             for f in glob.glob(pattern, recursive=True)

@@ -1,90 +1,142 @@
 # ForgeIt
-Templated based, configurable project generator CLI tool.
 
-## Prerequisites
-Set up `FORGE_CONFIG_PATH` environment variable. It must target to the configuration JSON file.
+Configurable project generator CLI tool.
 
-### Configuration file example
+## Object description
+- An object with a single key that starts with `$`.
+- Objects passed as the value of an object description will act as keyword arguments and lists will be treated as positional arguments.
+- If you provide any other value to the object description it will return just the symbol, not an instance of that symbol.
+- The description must follow the dot format as the path of the module for the leading symbol.
+
+JSON
+
 ```json
 {
-    "path": "Path where templates are located, if not present this file path is used. Ex: templates",
-    "templates": [
+  "$module.Class": {
+    "kwarg1": 100,
+    "kwarg2": {
+        "module1.Class": ["arg1", "arg1"]
+    },
+    "kwarg3": { 
+        "$module2.Class": null 
+    }
+  }
+}
+```
+Python
+```python
+import module
+import module1
+import module2
+
+obj = module.Class(
+    kwarg1=100, 
+    kwarg2=module1.Class("arg1", "arg2"), 
+    kwarg3=module2.Class
+)
+```
+## Variables
+Objects that represent the name and the type of a needed value for the template. They provide information for the CLI to show different prompts based on the type.
+
+You can nest variables inside others as long as the end node represents a type.
+
+#### Example
+Let's imagine you need to retrieve the following information of your user:
+- Name
+- Age
+- Favourite sports
+- Address
+    - Street
+    - Postal code
+
+You should provide this object to the template:
+```json
+{
+    "name": {"$str": null},
+    "age": {"$int": null},
+    "nicknames": {"$list": null}
+    "address": {
+        "street": {"$str": null},
+        "postalCode": {"$int": null}
+    }
+}
+```
+The CLI will show different prompts for each type. Internally the data will be modeled like the following:
+```json
+{
+    "name": "John Doe",
+    "age": 26,
+    "nicknames": ["Johnny", "Joe"]
+    "address": {
+        "street": "1234 Main Street",
+        "postalCode": 123456
+    }
+}
+```
+Then you could access the user address like `address.street` (if your selected template engine supports this syntax).
+
+## Processors
+Object that "process" and add/update variables in a given dictionary. Dot notation is used to access/set nested variables.
+
+Let's continue with the example of the user
+```json
+{
+    "name": "John Doe",
+    "age": 26,
+    "nicknames": ["Johnny", "Joe"]
+    "address": {
+        "street": "1234 Main Street",
+        "postalCode": 123456
+    }
+}
+```
+For instance, if you needed to create an slug based on the name for the person and store it in a new key you could do this in your template definition:
+```json
+{
+    /* ... */
+    "processors":[
         {
-            "name": "template name",
-            "description": "Description for the template",
-            "src": "path to the folder containing the template file structure relative to this file ex: (templates/data)",
-            "variables": {
-                "variable_name_1": "type, ex(str)",
-                "variable_name_2": "str"
-            },
-            "exclude": [
-                "file matching pattern to exclue from rendering",
-                "test_**.py",
-                "test/**.py"
-            ],
-            "processors": {
-                "processed_var_name": {
-                    "var": "variable_name_1",
-                    "name": "processor name, ex: camel -> Camel case proccesor"
-                },
-                "proccessed_var_name2": {
-                    "var": "variable_name_2",
-                    "name": "camel"
-                }
-            }
+            "$forgeit.processor.SnakeCase": ["name","slug"]
         }
     ]
 }
 ```
-### Templates folder structure
+And after the processing, the data would look like this:
+```json
+{
+    "name": "John Doe",
+    "age": 26,
+    "nicknames": ["Johnny", "Joe"]
+    "address": {
+        "street": "1234 Main Street",
+        "postalCode": 123456
+    },
+    "slug": "john_doe"
+}
 ```
-|--templates
-|  |--api # Template structure (ex: REST API)
-|  |  |--src
-|  |  |  |--app.py
-|  |  |  |--config.py
-|  |  |  |--models.py
-|  |  |  |--routes.py
-|  |  |  |--controllers.py
-|  |--cli # ex: CLI app
-|  |  |--src
-|  |  |  |--cli.py
-|  |  |  |--app.py
-|  |--forge.json # template configuration file
+Processors are lineal, that's why they're inside an array. Once a processor finishes its processing, the results are available for the next processor. 
+
+When storing a new key, if the path doesn't exists, it is created. Storing the proccesed value of `SnakeCase` in `url.slug` will create the following inside the data dictionary:
+```json
+{
+    /* ... */
+    "url": {
+        "slug": "john_doe"
+    }
+}
 ```
-### Installation
-1. Clone this repository
-```shell
-git clone <this repo>
-```
-2. Activate a virtual environment *(optional)*
-```shell
-# Unix
-python3 -m venv venv
-cd venv
-source venv/bin/activate
-```
-```shell
-# Windows
-python -m venv venv
-venv/Scripts/activate
-```
-3. Install the package `build`
-```shell
-pip install build
-python -m build
+## Configuration
+By default, the tool is expecting an object with this signature:
+```python
+class Config:
+    TEMPLATES: dict[str, ITemplate]
+    ENGINE: ITemplateEngine
+    ENCODING: str
 ```
 
-4. Install the built package `forgeit`
-```shell
-pip install dist/<generated package>.tar.gz
-# or
-pip install dist/<generated package>.whl
-```
-### Variable types
-When you define the variables for a template, you must declare their types in order to the tool to parse it.
-- `str` for strings
-- `list` for lists (each element will be parsed as string)
-- `float` for float point numbers
-- `int` for integers
-- `bool` for booleans
+So you can reference any class/object that has this shape and it will work.
+
+If you are using the tool just as a library you could use Python objects directly instead of loading the configuration from JSON files.
+
+## Engines
+An abstract class definition is used to avoid sticking to an specific engine, so you can basically install and use any engine you desire as long as you create a wrapper class around the engine to use it with the tool. By default, Jinja is used to render all.

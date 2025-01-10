@@ -1,8 +1,8 @@
 from jinja2 import Environment
-from ..base import ITemplateEngine
+from .base import ITemplateEngine
 
 
-class JinjaTemplateEngine(ITemplateEngine):
+class JinjaEngine(ITemplateEngine):
     def __init__(self):
         self.env = Environment()
 
