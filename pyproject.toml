@@ -22,7 +22,7 @@ dependencies = [
 Homepage = "https://github.com/KennethUlloa/forgeit"
 
 [project.scripts]
-forgeit = "forgeit.cli:run"
+forgeit = "forgeit.cli:app"
 
 [build-system]
 requires = ["setuptools>=61.0"]
