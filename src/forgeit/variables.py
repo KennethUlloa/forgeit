@@ -3,159 +3,6 @@ import rich
 from typing import Callable
 from rich.prompt import Prompt, IntPrompt, FloatPrompt, Confirm
 
-
-"""
-
-typeof = type
-
-
-class VariableType(ABC):
-    type: str
-
-    def __init__(self, *, name: str, label: str = None, **_):
-        self.name = name
-        self.label = label
-
-    @abstractmethod
-    def request_input(self, parent_spacer: str):
-        pass
-
-
-class VariableTypeStore:
-    bindings: dict[str, Type[VariableType]] = {}
-
-    @classmethod
-    def get(cls, typeName: str):
-        return cls.bindings[typeName]
-
-    @classmethod
-    def has(cls, typeName: str):
-        return typeName in cls.bindings
-
-
-class StringType(VariableType):
-    type = "string"
-
-    def __init__(self, *, name, label=None, allow_empty: bool = True, **_):
-        super().__init__(name=name, label=label, **_)
-        self.allow_empty = allow_empty
-
-    def request_input(self, parent_spacer: str):
-        label = self.label or self.name.capitalize()
-        content = Prompt.ask(f"{parent_spacer}{label}")
-        if not self.allow_empty and not content:
-            log(f"{parent_spacer}Empty strings not allowed")
-        while not self.allow_empty and not content:
-            content = Prompt.ask(f"{parent_spacer}{label}")
-            if not content:
-                log(f"{parent_spacer}Empty strings not allowed")
-        return content
-
-
-class IntegerType(VariableType):
-    type = "integer"
-
-    def __init__(self, *, name, label=None, **_):
-        super().__init__(name=name, label=label, **_)
-
-    def request_input(self, parent_spacer: str):
-        label = self.label or self.name.capitalize()
-        return IntPrompt.ask(f"{parent_spacer}{label}")
-
-
-class FloatType(VariableType):
-    type = "float"
-
-    def __init__(self, *, name, label=None, **_):
-        super().__init__(name=name, label=label, **_)
-
-    def request_input(self, parent_spacer: str):
-        label = self.label or self.name.capitalize()
-        return FloatPrompt.ask(f"{parent_spacer}{label}")
-
-
-class BooleanType(VariableType):
-    type = "boolean"
-
-    def __init__(self, *, name, label=None, **_):
-        super().__init__(name=name, label=label, **_)
-
-    def request_input(self, parent_spacer: str):
-        label = self.label or self.name.capitalize()
-        return Confirm.ask(f"{parent_spacer}{label}")
-
-
-class ListType(VariableType):
-    type = "list"
-
-    def __init__(
-        self,
-        *,
-        item_attributes: dict,
-        size: int = None,
-        **kwargs,
-    ):
-        super().__init__(**kwargs)
-        self.item_attributes = item_attributes
-        self.size = max(0, int(size)) if size is not None else size
-
-    def request_input(self, parent_spacer: str):
-        if self.size == 0:
-            return []
-
-        items = []
-        label = self.label or self.name.capitalize()
-        log(
-            f"{parent_spacer}[yellow]{label} ({'list' if self.size is None else self.size})[/yellow]"
-        )
-        item_type = VariableTypeStore.get(self.item_attributes["type"])
-        item_label = self.item_attributes.get("label") or ""
-        if item_label:
-            item_label += " "
-        add_more_items = True
-
-        while add_more_items:
-            item_attrs = {**self.item_attributes}
-            item_attrs["label"] = f"{item_label}[{len(items)}]"
-            item_attrs["name"] = ""
-            item = item_type(**item_attrs)
-            items.append(item.request_input(parent_spacer + "  "))
-            if self.size is None:
-                add_more_items = Confirm.ask(f"{parent_spacer}  Add more?")
-                continue
-
-            if len(items) == self.size:
-                break
-
-        return items
-
-
-class ObjectType(VariableType):
-    type = "object"
-
-    def __init__(self, *, name: str, label: str = None, props: dict, **kwargs):
-        super().__init__(name=name, label=label, **kwargs)
-        self.props = props
-
-    def request_input(self, parent_spacer: str):
-        label = self.label or self.name.capitalize()
-        log(f"{parent_spacer}[green]{label} (object)[/green]")
-        item = {}
-        for name, prop in self.props.items():
-            item_type = VariableTypeStore.get(prop["type"])
-            prop["name"] = name
-            item[name] = item_type(**prop).request_input(parent_spacer + "  ")
-
-        return item
-
-
-VariableTypeStore.bindings = {
-    t.type: t
-    for t in [StringType, IntegerType, FloatType, BooleanType, ListType, ObjectType]
-}
-
-"""
-
 class Registry:
     __types: dict[str, Callable] = {}
 
@@ -195,7 +42,6 @@ def object_input(*, label: str, props: dict, parent_space: str = "", **_):
 def list_input(
     *,
     label: str,
-    item_type: str,
     item_attributes: dict,
     size: int = None,
     parent_space: str = "",
@@ -203,6 +49,7 @@ def list_input(
     continue_default: bool = False,
     **_,
 ):
+    item_type = item_attributes["type"]
     prompt = f"{parent_space}{label} [yellow](list{f':{size}' if size is not None else ''})[/yellow]"
     item_type: Callable = Registry.get(item_type)
     items = []

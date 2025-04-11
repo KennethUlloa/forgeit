@@ -1,8 +1,21 @@
 import sqlite3
 import os
 import json
-from . import env, model
+from dataclasses import asdict
+from . import env, model, utils
 
+
+def serialize(template: model.Template) -> str:
+    dict_data = asdict(template)
+    
+    if "id" in dict_data:
+        dict_data.pop("id")
+    
+    return json.dumps(dict_data)
+
+def deserialize(json_str: str) -> model.Template:
+     json_data = json.loads(json_str)
+     return model.Template(**json_data)
 
 class __DatabaseContext:
     def __init__(self):
@@ -16,8 +29,10 @@ class __DatabaseContext:
             CREATE TABLE IF NOT EXISTS template (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT UNIQUE NOT NULL,
-                path TEXT NOT NULL,
-                active INTEGER NOT NULL DEFAULT 1  
+                label TEXT NOT NULL,
+                description TEXT NOT NULL,
+                active INTEGER NOT NULL DEFAULT 1,
+                json TEXT NOT NULL
             )
         """)
         self.__connection.commit()
@@ -26,35 +41,48 @@ class __DatabaseContext:
     def get_template(self, template_name: str):
         cursor = self.__connection.cursor()
         res = cursor.execute(
-            "SELECT id, path FROM template WHERE name = ? AND active = 1 LIMIT 1", (template_name,)
+            "SELECT id, json FROM template WHERE name = ? AND active = 1 LIMIT 1",
+            (template_name,),
         )
 
         res = res.fetchone()
 
         if not res:
             return None
-        
-        _id, path = res
-        with open(path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            data["path"] = path
-            data["id"] = _id
-            return model.Template(**data)
 
-
-    def save_template(self, name: str, path: str):
-        if not os.path.exists(path):
-            raise Exception(f"Invalid path {path}")
-
-        data = (name, path, True)
-        cursor = self.__connection.cursor()
-        cursor.execute("INSERT INTO template(name, path, active) VALUES (?,?,?)", data)
-        self.__connection.commit()
+        _id, _json = res
+        template = deserialize(_json)
+        template.id = _id
+        return template
     
-    def get_all_templates(self):
+    def save_template(self, template: model.Template):
+        if not template:
+            raise ValueError("Can't store empty objects")
+        
+        data = (
+            template.name, #name
+            template.label, #label
+            template.description, #description
+            serialize(template), #json
+            True, #active
+        )
+
         cursor = self.__connection.cursor()
-        res = cursor.execute("SELECT name, path, active FROM template")
-        return res.fetchall(), ["Name", "Path", "Active"]
+        cursor.execute("INSERT INTO template(name, label, description, json, active) VALUES (?,?,?,?,?)", data)
+        self.__connection.commit()
+
+    def get_all_templates_data(self) -> list[model.TemplateData]:
+        cursor = self.__connection.cursor()
+        res = cursor.execute("SELECT id, name, description, active FROM template")
+        return [
+            model.TemplateData(
+                id=row[0],
+                name=row[1],
+                description=row[2],
+                active=bool(row[3])
+            )
+            for row in res
+        ]
 
     def __enter__(self):
         self.__load_connection()
@@ -65,5 +93,5 @@ class __DatabaseContext:
         return False
 
 
-def open_db():
+def opendb():
     return __DatabaseContext()

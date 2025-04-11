@@ -5,10 +5,14 @@ from .processors import processors
 
 class Engine:
     def __init__(self, path: str):
+        template_path = os.path.realpath(path)
+
+        if os.path.isfile(template_path):
+            print("is file")
+            template_path = os.path.dirname(template_path)
+
         self.__engine = Environment(
-            loader=FileSystemLoader(
-                os.path.join(os.path.dirname(os.path.realpath(path)), "templates")
-            )
+            loader=FileSystemLoader(os.path.join(template_path, "templates"))
         )
         self.__engine.filters.update(processors)
 

@@ -1,15 +1,19 @@
 import json
 import rich
 import os
+import zipfile
 from dataclasses import asdict
 from rich.table import Table
 from rich.progress import track
-from rich.prompt import Prompt
+from rich.prompt import Prompt, Confirm
 from typer import Typer, Argument
-from .template import render_template
-from .db import open_db
+from .utils import read, save
+from .model import Template, Cache, SubTemplate, Context
+from .template import render_template_as_callbacks, path as template_path
+from .db import opendb
 from .meta import VERSION, ASCII
 from .variables import Registry
+from .schemas import validate
 from . import env
 
 
@@ -17,35 +21,69 @@ app = Typer(name="Forge it", help="A simple project generator")
 env.init()
 
 
+def error(*messages: str):
+    rich.print("[red]", *messages, "[/red]")
+
+
+def get_variables(variables_schema: dict, ctx: Context, variables_file: str = None):
+    variables = {}
+    if variables_file and os.path.exists(variables_file):
+        with read(variables_file) as f:
+            variables = json.load(f)
+    else:
+        variables = {
+            name: Registry.get(value["type"])(**value)
+            for name, value in variables_schema.items()
+        }
+
+    variables.update({"_ctx": asdict(ctx)})
+
+    return variables
+
+
+def load_cache():
+    if not os.path.exists(env.CACHE_FILE):
+        return None
+
+    with read(env.CACHE_FILE) as f:
+        return Cache(**json.load(f))
+
+
+def save_cache(cache: Cache):
+    cache_dict = asdict(cache)
+    if "_ctx" in cache_dict["variables"]:
+        cache_dict["variables"].pop("_ctx")
+
+    with save(env.CACHE_FILE) as f:
+        json.dump(cache_dict, f)
+
+
 @app.command(help="Render a template's files given a name")
 def init(
     template_name: str = Argument(None, help="The template name to use"),
-    variables_file: str = Argument(None, help="JSON File with the needed variables"),
+    variables_file: str = Argument(None, help="JSON File with the required variables"),
 ):
-    with open_db() as db:
+    if os.path.exists(env.CACHE_FILE) and not Confirm.ask(
+        "Template data found. If you continue, this file will be overwritten and previous template might broke. Proceed?",
+        default=True,
+    ):
+        return
+
+    with opendb() as db:
         template = db.get_template(template_name)
 
     if not template:
         rich.print(f"[yellow]Template '{template_name}' not found[/yellow]")
         return
 
-    variables = {}
-    if variables_file and os.path.exists(variables_file):
-        with open(variables_file, "r", encoding="utf-8") as f:
-            variables = json.load(f)
-    else:
-        variables = {
-            name: Registry.get(value["type"])(**value)
-            for name, value in template.variables.items()
-        }
-
     root = Prompt.ask("Root path", default=".", show_default=True)
-
     ctx = env.create_context(root)
-    variables.update({"_ctx": asdict(ctx)})
+    variables = get_variables(template.variables, ctx, variables_file)
 
-    for rendered_file in track(render_template(template, ctx, variables)):
-        rich.print(f":white_check_mark: [green]{rendered_file}[/green]")
+    save_cache(Cache(template=template_name, variables=variables, root=root))
+
+    for callback in track(render_template_as_callbacks(template, ctx, variables)):
+        rich.print(f":white_check_mark: [green]{callback()}[/green]")
 
 
 @app.command(
@@ -55,9 +93,35 @@ def new(
     name: str = Argument(
         None, help="The subtemplate name (requires a parent template)"
     ),
+    variables_file: str = Argument(None, help="JSON File with the required variables"),
 ):
-    # TODO: reimplement subtemplates
-    pass
+    cache = load_cache()
+
+    if not cache:
+        error("No parent template was found")
+        return
+
+    with opendb() as db:
+        parent_template = db.get_template(cache.template)
+
+    if not parent_template:
+        error(f"Malformed cache file: {cache.template} is not a valid template")
+        return
+
+    if name not in parent_template.subtemplates:
+        error(f"Subtemplate {name} wasn't found")
+        return
+
+    template = SubTemplate(
+        **parent_template.subtemplates[name], parent_name=parent_template.name
+    )
+
+    ctx = env.create_context(cache.root)
+    variables = cache.variables
+    variables.update(get_variables(template.variables, ctx, variables_file))
+
+    for callback in track(render_template_as_callbacks(template, ctx, variables)):
+        rich.print(f":white_check_mark: [green]{callback()}[/green]")
 
 
 @app.command(help="Install a template description from a file path")
@@ -66,30 +130,66 @@ def install(
         None, help="Real path for the file containing the template description"
     ),
 ):
-    # TODO: reimplement template saving
-    template = json.load(open(path, "r", encoding="utf-8"))
-    with open_db() as db:
-        db.save_template(template["name"], os.path.realpath(path))
+    # TODO: Implement zip file template installation
+    if not os.path.exists(path):
+        error("Path doesn't exists")
+        return
 
-    rich.print(f"[green]Template {template['name']} installed successfully![/green]")
+    if path.endswith(".zip"):
+        with zipfile.ZipFile(path, "r") as zip:
+            if "template.json" not in zip.namelist():
+                raise Exception('"template.json" file missing in ZIP file')
+
+            with zip.open("template.json", "r") as file:
+                rich.print("[cyan]Validating template...[/cyan]")
+                template_data = json.load(file)
+                validate(template_data)
+                template = Template(**template_data)
+
+            files = [f for f in zip.infolist() if f.filename != "template.json"]
+
+            t_path = template_path(template)
+
+            for f in track(files, "[cyan]Saving template files...[/cyan]"):
+                zip.extract(f, t_path)
+            
+            with opendb() as db:
+                rich.print("[cyan]Saving template...[/cyan]")
+                db.save_template(template)
+
+        return
+
+    if path.endswith(".json"):
+        with read(path) as f:
+            # TODO: add template file validation
+            rich.print("[cyan]Reading template...[/cyan]")
+            template_data = json.load(f)
+            rich.print("[cyan]Validating template...[/cyan]")
+            validate(template_data)
+            template = Template(**template_data)
+
+        with opendb() as db:
+            db.save_template(template)
+
+        rich.print("Template installed successfully")
+        return
+
+    rich.print("Invalid extension, expected: zip, json")
 
 
 @app.command(name="list", help="List all the available templates")
 def list_all():
-    # TODO: reimplement template listing
-    with open_db() as db:
-        data, columns = db.get_all_templates()
+    with opendb() as db:
+        templates = db.get_all_templates_data()
 
     table = Table(title="Installed templates")
-
+    columns = ["ID", "Name", "Description", "Status"]
     for col in columns:
         table.add_column(col)
 
-    for row in data:
-        rendered = [*row]
-        active = row[-1]
-        rendered[-1] = "active" if active else "inactive"
-        table.add_row(*[r if active else f"[red]{r}[/red]" for r in rendered])
+    for template in templates:
+        active = "Active" if template.active else f"[red]Inactive[/red]"
+        table.add_row(str(template.id), template.name, template.description, active)
 
     rich.print(table)
 
@@ -107,6 +207,7 @@ Version [cyan]{VERSION}[/cyan]
 @app.command(help="Information about")
 def info():
     rich.print(f"[cyan]Application path[/cyan] {env.APP_DIR}")
+
 
 if __name__ == "__main__":
     app()

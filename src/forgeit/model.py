@@ -3,6 +3,9 @@ from datetime import datetime
 from enum import StrEnum
 
 
+def model(**kwargs):
+    return dataclass(kw_only=True, **kwargs)
+
 class TemplateType(StrEnum):
     TEMPLATE = "template"
     FILE = "file"
@@ -12,7 +15,7 @@ class TemplateType(StrEnum):
         return [v for v in TemplateType]
 
 
-@dataclass(kw_only=True, frozen=True)
+@model(frozen=True)
 class Context:
     cwd: str
     app_name: str
@@ -20,23 +23,36 @@ class Context:
     now: datetime = field(default_factory=datetime.now)
 
 
-@dataclass(kw_only=True)
-class Template:
+@model()
+class BaseTemplate:
     name: str
     label: str
     description: str
     variables: dict[str, dict]
     content: dict[str, dict]
-    subtemplates: dict[str, dict]
-    path: str
+
+@model()
+class Template(BaseTemplate):
+    subtemplates: dict[str, dict] = field(default_factory=dict)
+    id: int = field(default=None)
+
+
+@model()
+class SubTemplate(BaseTemplate):
+    name: str = None
+    parent_name: str
+
+
+@model()
+class Cache:
+    template: str
+    variables: dict
+    root: str
+
+
+@model()
+class TemplateData:
     id: int
-
-
-@dataclass(kw_only=True)
-class Subtemplate(Template):
     name: str
-    label: str
     description: str
-    variables: dict[str, dict]
-    content: dict[str, dict]
-    path: str
+    active: bool
