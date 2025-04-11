@@ -133,5 +133,5 @@ template_schema = {
     },
 }
 
-def validate(template_data: dict):
+def validate_template(template_data: dict):
     jsonschema.validate(template_data, template_schema)

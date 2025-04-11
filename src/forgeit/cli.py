@@ -13,7 +13,7 @@ from .template import render_template_as_callbacks, path as template_path
 from .db import opendb
 from .meta import VERSION, ASCII
 from .variables import Registry
-from .schemas import validate
+from .schemas import validate_template
 from . import env
 
 
@@ -22,7 +22,7 @@ env.init()
 
 
 def error(*messages: str):
-    rich.print("[red]", *messages, "[/red]")
+    rich.print("[red]"+" ".join(messages)+"[/red]")
 
 
 def get_variables(variables_schema: dict, ctx: Context, variables_file: str = None):
@@ -127,7 +127,7 @@ def new(
 @app.command(help="Install a template description from a file path")
 def install(
     path: str = Argument(
-        None, help="Real path for the file containing the template description"
+        None, help="Real path for the file containing the template description (.zip)"
     ),
 ):
     # TODO: Implement zip file template installation
@@ -143,7 +143,7 @@ def install(
             with zip.open("template.json", "r") as file:
                 rich.print("[cyan]Validating template...[/cyan]")
                 template_data = json.load(file)
-                validate(template_data)
+                validate_template(template_data)
                 template = Template(**template_data)
 
             files = [f for f in zip.infolist() if f.filename != "template.json"]
@@ -152,29 +152,35 @@ def install(
 
             for f in track(files, "[cyan]Saving template files...[/cyan]"):
                 zip.extract(f, t_path)
-            
+
             with opendb() as db:
                 rich.print("[cyan]Saving template...[/cyan]")
                 db.save_template(template)
 
-        return
-
-    if path.endswith(".json"):
-        with read(path) as f:
-            # TODO: add template file validation
-            rich.print("[cyan]Reading template...[/cyan]")
-            template_data = json.load(f)
-            rich.print("[cyan]Validating template...[/cyan]")
-            validate(template_data)
-            template = Template(**template_data)
-
-        with opendb() as db:
-            db.save_template(template)
-
         rich.print("Template installed successfully")
         return
 
-    rich.print("Invalid extension, expected: zip, json")
+    rich.print("Invalid extension, expected: zip")
+
+
+@app.command(help="Validate a template description")
+def validate(
+    path: str = Argument(
+        None, help="Real path for the file containing the template description (.json)"
+    ),
+):
+    if not path or not os.path.exists(path):
+        error("Path doesn't exists")
+        return
+
+    if not path.endswith(".json"):
+        error("Invalid extension, expected: json")
+        return
+
+    with open(path, "r") as f:
+        template = json.load(f)
+
+    validate_template(template)
 
 
 @app.command(name="list", help="List all the available templates")
