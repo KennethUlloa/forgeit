@@ -21,3 +21,4 @@ local_*.*
 **/*.local.*
 templates/
 *.cache
+main.py
