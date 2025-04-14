@@ -7,15 +7,17 @@ from . import env, model, utils
 
 def serialize(template: model.Template) -> str:
     dict_data = asdict(template)
-    
+
     if "id" in dict_data:
         dict_data.pop("id")
-    
+
     return json.dumps(dict_data)
 
+
 def deserialize(json_str: str) -> model.Template:
-     json_data = json.loads(json_str)
-     return model.Template(**json_data)
+    json_data = json.loads(json_str)
+    return model.Template(**json_data)
+
 
 class __DatabaseContext:
     def __init__(self):
@@ -54,21 +56,24 @@ class __DatabaseContext:
         template = deserialize(_json)
         template.id = _id
         return template
-    
+
     def save_template(self, template: model.Template):
         if not template:
             raise ValueError("Can't store empty objects")
-        
+
         data = (
-            template.name, #name
-            template.label, #label
-            template.description, #description
-            serialize(template), #json
-            True, #active
+            template.name,  # name
+            template.label,  # label
+            template.description,  # description
+            serialize(template),  # json
+            True,  # active
         )
 
         cursor = self.__connection.cursor()
-        cursor.execute("INSERT INTO template(name, label, description, json, active) VALUES (?,?,?,?,?)", data)
+        cursor.execute(
+            "INSERT INTO template(name, label, description, json, active) VALUES (?,?,?,?,?)",
+            data,
+        )
         self.__connection.commit()
 
     def get_all_templates_data(self) -> list[model.TemplateData]:
@@ -76,10 +81,7 @@ class __DatabaseContext:
         res = cursor.execute("SELECT id, name, description, active FROM template")
         return [
             model.TemplateData(
-                id=row[0],
-                name=row[1],
-                description=row[2],
-                active=bool(row[3])
+                id=row[0], name=row[1], description=row[2], active=bool(row[3])
             )
             for row in res
         ]

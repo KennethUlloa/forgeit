@@ -133,5 +133,6 @@ template_schema = {
     },
 }
 
+
 def validate_template(template_data: dict):
     jsonschema.validate(template_data, template_schema)

@@ -19,7 +19,7 @@ Renders a template's fragment (subtemplate) using stored context `.forge.json` f
 
 ### `install`
 
-Installs a template description from a file path. It can be either a JSON file or a ZIP File.
+Installs a template description from a file path. It must be a ZIP File.
 
 The provided ZIP file must have the following structure:
 ```

@@ -6,6 +6,7 @@ from enum import StrEnum
 def model(**kwargs):
     return dataclass(kw_only=True, **kwargs)
 
+
 class TemplateType(StrEnum):
     TEMPLATE = "template"
     FILE = "file"
@@ -30,6 +31,7 @@ class BaseTemplate:
     description: str
     variables: dict[str, dict]
     content: dict[str, dict]
+
 
 @model()
 class Template(BaseTemplate):

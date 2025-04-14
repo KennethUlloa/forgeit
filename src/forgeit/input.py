@@ -3,6 +3,7 @@ import rich
 from typing import Callable
 from rich.prompt import Prompt, IntPrompt, FloatPrompt, Confirm
 
+
 class Registry:
     __types: dict[str, Callable] = {}
 

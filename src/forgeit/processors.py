@@ -5,6 +5,7 @@ from typing import Callable
 processors = {}
 tests = {}
 
+
 def filter(key: str = None):
     def decorator(f: Callable):
         name = key or f.__name__
@@ -20,7 +21,7 @@ def test(key: str = None):
         tests[name] = f
         return f
 
-    return decorator 
+    return decorator
 
 
 @filter()
@@ -81,4 +82,3 @@ def symbol(value: str):
 def module_path(value: str):
     parts = value.split(".")[0:-1]
     return ".".join(parts)
-

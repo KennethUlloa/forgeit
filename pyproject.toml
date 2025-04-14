@@ -1,6 +1,6 @@
 [project]
 name = "forgeit"
-version = "0.1.0"
+version = "0.1.0.beta"
 authors = [
   { name="Kenneth Ulloa", email="ulloakenth@gmail.com" },
 ]
@@ -22,7 +22,7 @@ dependencies = [
 Homepage = "https://github.com/KennethUlloa/forgeit"
 
 [project.scripts]
-forgeit = "forgeit.cli:app"
+fg = "forgeit.cli:app"
 
 [build-system]
 requires = ["setuptools>=61.0"]

@@ -12,7 +12,7 @@ from .model import Template, Cache, SubTemplate, Context
 from .template import render_template_as_callbacks, path as template_path
 from .db import opendb
 from .meta import VERSION, ASCII
-from .variables import Registry
+from .input import Registry
 from .schemas import validate_template
 from . import env
 
@@ -22,7 +22,7 @@ env.init()
 
 
 def error(*messages: str):
-    rich.print("[red]"+" ".join(messages)+"[/red]")
+    rich.print("[red]" + " ".join(messages) + "[/red]")
 
 
 def get_variables(variables_schema: dict, ctx: Context, variables_file: str = None):
@@ -130,7 +130,6 @@ def install(
         None, help="Real path for the file containing the template description (.zip)"
     ),
 ):
-    # TODO: Implement zip file template installation
     if not os.path.exists(path):
         error("Path doesn't exists")
         return
@@ -208,11 +207,6 @@ Forgeit
 Version [cyan]{VERSION}[/cyan]
 """
     rich.print(prompt)
-
-
-@app.command(help="Information about")
-def info():
-    rich.print(f"[cyan]Application path[/cyan] {env.APP_DIR}")
 
 
 if __name__ == "__main__":
