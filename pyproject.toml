@@ -6,16 +6,23 @@ authors = [
 ]
 description = "A simple cli tool to generate python project based on a template"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
+    "Intended Audience :: Developers",
     "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities"
 ]
-keywords = ["cli", "python", "template", "project"]
+keywords = ["cli", "python", "template", "project", "scaffold", "tool"]
 dependencies = [
 "Jinja2>=3.1.4",
-"typer>=0.12.5"
+"typer>=0.12.5",
+"jsonschema>=4.23.0"
 ]
 
 [project.urls]

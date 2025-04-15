@@ -9,13 +9,13 @@ It provides the following commands:
 
 Render a template's files given a name. If no variables file is given, the user will be prompted to enter them manually.
 
-* Usage: `forgeit init <name> [--variables-file <file>]`
+* Usage: `fg init <name> [<file>]`
 
 ### `new`
 
 Renders a template's fragment (subtemplate) using stored context `.forge.json` file. If no variables file is given, the user will be prompted to enter the manually.
 
-* Usage: `forgeit new <name> [--variables-file <file>]`
+* Usage: `fg new <name> [<file>]`
 
 ### `install`
 
@@ -31,26 +31,33 @@ The provided ZIP file must have the following structure:
     template.json # Template schema/definition
 ```
 
-* Usage: `forgeit install <path>`
+* Usage: `fg install <path>`
 
 ### `list`
 
 Lists all the available templates.
 
-* Usage: `forgeit list`
+* Usage: `fg list`
 
 
 ### `version`
 
 Displays the current version of the tool.
 
-* Usage: `forgeit version`
+* Usage: `fg version`
 
 ### `validate`
 
 Validate a template description. It must be a JSON file.
 
-* Usage: `forgeit validate <file>`
+* Usage: `fg validate <file>`
+
+### `example`
+
+Create an example template. It will create a ZIP file containing a basic layout of a 
+valid template in the current working directory. You could install it to use it if you want.
+
+* Usage `fg example`
 
 ## Template Schema
 

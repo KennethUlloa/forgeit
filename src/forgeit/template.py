@@ -1,11 +1,97 @@
+from dataclasses import asdict
 import os
+from typing import Callable, Protocol
 from . import env
-from .engine import Engine
-from .model import Template, TemplateType, Context, SubTemplate
+from .engine import RenderEngine
+from .model import Template, TemplateType, Context, SubTemplate, BaseTemplate
 from .utils import read, save
 
 
-def path(template: Template):
+class RenderContext(Protocol):
+    template: BaseTemplate
+    ctx: Context
+    variables: dict
+    engine: RenderEngine
+    template_path: str
+    static_path: str
+
+
+type ContentRenderCallback = Callable[[RenderContext, str], str]
+
+
+def _file_renderer(ctx: RenderContext, path: str) -> str:
+    input_path = os.path.join(
+        ctx.static_path,
+        ctx.engine.render_string(path, asdict(ctx.ctx)),
+    )
+
+    with read(input_path) as f:
+        return f.read()
+
+
+def _template_renderer(ctx: RenderContext, path: str) -> str:
+    return ctx.engine.render_file(path, ctx.variables)
+
+
+def _content_renderer(ctx: RenderContext, path: str) -> str:
+    return ctx.engine.render_string(path, ctx.variables)
+
+
+class TemplateRenderer:
+    __content_renderers: dict[TemplateType, ContentRenderCallback] = {
+        TemplateType.FILE: _file_renderer,
+        TemplateType.TEMPLATE: _template_renderer,
+        TemplateType.CONTENT: _content_renderer,
+    }
+
+    def __init__(self, template: BaseTemplate, ctx: Context, variables: dict) -> None:
+        self.template_path = os.path.realpath(
+            os.path.join(env.APP_DIR, template.path_name, "templates")
+        )
+        self.static_path = os.path.realpath(
+            os.path.join(env.APP_DIR, template.path_name, "files")
+        )
+
+        self.engine = RenderEngine(self.template_path)
+        self.template = template
+        self.ctx = ctx
+        self.variables = variables
+
+    def render(self, root: str):
+        return [
+            self.render_content(target, source, root)
+            for target, source in self.template.content.items()
+        ]
+
+    def render_callbacks(self, root: str) -> list[Callable[[], str]]:
+        def create_callback(target: str, source: str) -> Callable[[], str]:
+            return lambda: self.render_content(target, source, root)
+
+        return [
+            create_callback(target, source)
+            for target, source in self.template.content.items()
+        ]
+
+    def render_content(self, target: str, source: str, root: str):
+        template_type, content = source.split(":", 1)
+        renderer = self.__content_renderers[template_type]
+        content = renderer(self, content)
+
+        output_path = os.path.normpath(
+            os.path.join(root, self.engine.render_string(target, self.variables))
+        )
+
+        output_path_dir = os.path.dirname(output_path)
+        if output_path_dir:
+            os.makedirs(output_path_dir, exist_ok=True)
+
+        with save(output_path) as f:
+            f.write(content)
+
+        return output_path
+
+
+def template_path(template: Template):
     return os.path.normpath(
         os.path.join(
             env.APP_DIR,
@@ -14,61 +100,3 @@ def path(template: Template):
             else template.name,
         )
     )
-
-
-def render_file(
-    target: str, source: str, ctx: Context, variables: dict, engine: Engine
-):
-    output_path = engine.render_string(target, variables)
-    output_path = os.path.normpath(output_path)
-    template_type, content = source.split(":", 1)
-
-    if template_type not in TemplateType.values():
-        raise ValueError(
-            f"{template_type} is not a valid template type, expected any of {','.join(TemplateType.values())}"
-        )
-
-    rendered_content = content
-
-    match template_type:
-        case TemplateType.TEMPLATE:
-            rendered_content = engine.render_file(content, variables)
-
-        case TemplateType.FILE:
-            with read(engine.render_string(content, ctx)) as f:
-                rendered_content = f.read()
-
-        case TemplateType.CONTENT:
-            rendered_content = engine.render_string(content, variables)
-
-    output_path_dir = os.path.dirname(output_path)
-    os.makedirs(output_path_dir, exist_ok=True)
-
-    with save(output_path) as f:
-        f.write(rendered_content)
-
-    return output_path
-
-
-def render_template_as_callbacks(template: Template, ctx: Context, variables: dict):
-    engine = Engine(path(template))
-
-    def create_callback(target, source):
-        def render():
-            return render_file(
-                os.path.join(ctx.root, target), source, ctx, variables, engine
-            )
-
-        return render
-
-    return [
-        create_callback(target, source) for target, source in template.content.items()
-    ]
-
-
-def render_template(template: Template, ctx: Context, variables: dict):
-    engine = Engine(path(template))
-    return [
-        render_file(os.path.join(ctx.root, target), source, ctx, variables, engine)
-        for target, source in template.content.items()
-    ]

@@ -6,10 +6,10 @@ from dataclasses import asdict
 from rich.table import Table
 from rich.progress import track
 from rich.prompt import Prompt, Confirm
-from typer import Typer, Argument
+from typer import Typer, Argument, Option
 from .utils import read, save
 from .model import Template, Cache, SubTemplate, Context
-from .template import render_template_as_callbacks, path as template_path
+from .template import TemplateRenderer, template_path
 from .db import opendb
 from .meta import VERSION, ASCII
 from .input import Registry
@@ -82,7 +82,8 @@ def init(
 
     save_cache(Cache(template=template_name, variables=variables, root=root))
 
-    for callback in track(render_template_as_callbacks(template, ctx, variables)):
+    renderer = TemplateRenderer(template, ctx, variables)
+    for callback in track(renderer.render_callbacks(root), "Rendering..."):
         rich.print(f":white_check_mark: [green]{callback()}[/green]")
 
 
@@ -119,8 +120,8 @@ def new(
     ctx = env.create_context(cache.root)
     variables = cache.variables
     variables.update(get_variables(template.variables, ctx, variables_file))
-
-    for callback in track(render_template_as_callbacks(template, ctx, variables)):
+    renderer = TemplateRenderer(template, ctx, variables)
+    for callback in track(renderer.render_callbacks(cache.root), "Rendering..."):
         rich.print(f":white_check_mark: [green]{callback()}[/green]")
 
 
@@ -200,13 +201,75 @@ def list_all():
 
 
 @app.command(help="Display current version of the tool")
-def version():
-    prompt = f"""
-[green]{ASCII}[/green]
-Forgeit
+def version(
+    verbose: bool = Option(
+        False, "--verbose", "-v", help="Display more information about the tool"
+    ),
+):
+    if not verbose:
+        prompt = VERSION
+    else:
+        prompt = f"""[green]{ASCII}[/green]
+ForgeIt
 Version [cyan]{VERSION}[/cyan]
 """
     rich.print(prompt)
+
+
+@app.command(help="Create an example template")
+def example():
+    html_template = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    Name: {{ name }}, Email: {{ email }}
+    <script src="script.js"></script>
+</body>
+</html>
+"""
+
+    javascript_template = """alert('Hello, {{ name }}!');"""
+
+    css_template = """body {
+    background-color: #f0f0f0;
+    color: #333;
+}"""
+    example_template = {
+        "label": "Example",
+        "name": "example",
+        "description": "Example template",
+        "variables": {
+            "name": {"type": "string", "label": "Name"},
+            "email": {"type": "string", "label": "Email"},
+        },
+        "content": {
+            "README.md": "content:# Example\n- Hello {{name}}\n- Email: {{email}}",
+            "LICENSE": "content:MIT",
+            "index.html": "template:index.html.j2",
+            "style.css": "file:style.css",
+            "script.js": "template:script.js.j2",
+        },
+    }
+
+    with zipfile.ZipFile("example.zip", "w") as zip:
+        with zip.open("template.json", "w") as file:
+            text = json.dumps(example_template)
+            file.write(text.encode("utf-8"))
+
+        with zip.open("templates/index.html.j2", "w") as file:
+            file.write(html_template.encode("utf-8"))
+
+        with zip.open("files/style.css", "w") as file:
+            file.write(css_template.encode("utf-8"))
+
+        with zip.open("templates/script.js.j2", "w") as file:
+            file.write(javascript_template.encode("utf-8"))
+
+    rich.print("Example template created successfully")
 
 
 if __name__ == "__main__":

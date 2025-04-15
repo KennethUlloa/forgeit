@@ -30,7 +30,11 @@ class BaseTemplate:
     label: str
     description: str
     variables: dict[str, dict]
-    content: dict[str, dict]
+    content: dict[str, str]
+
+    @property
+    def path_name(self):
+        return self.name
 
 
 @model()
@@ -43,6 +47,10 @@ class Template(BaseTemplate):
 class SubTemplate(BaseTemplate):
     name: str = None
     parent_name: str
+
+    @property
+    def path_name(self):
+        return self.parent_name
 
 
 @model()

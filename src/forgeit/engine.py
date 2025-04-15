@@ -3,17 +3,9 @@ from jinja2 import Environment, FileSystemLoader
 from .processors import processors
 
 
-class Engine:
+class RenderEngine:
     def __init__(self, path: str):
-        template_path = os.path.realpath(path)
-
-        if os.path.isfile(template_path):
-            print("is file")
-            template_path = os.path.dirname(template_path)
-
-        self.__engine = Environment(
-            loader=FileSystemLoader(os.path.join(template_path, "templates"))
-        )
+        self.__engine = Environment(loader=FileSystemLoader(path))
         self.__engine.filters.update(processors)
 
     def render_file(self, path: str, data: dict) -> str:
