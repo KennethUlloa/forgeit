@@ -5,7 +5,7 @@ import zipfile
 from dataclasses import asdict
 from rich.table import Table
 from rich.progress import track
-from rich.prompt import Prompt, Confirm
+from rich.prompt import Prompt
 from typer import Typer, Argument, Option
 from .utils import read, save
 from .model import Template, Cache, SubTemplate, Context
@@ -77,7 +77,7 @@ def init(
     save_cache(Cache(template=template_name, variables=variables, root=root))
 
     renderer = TemplateRenderer(template, ctx, variables)
-    for callback in track(renderer.render_callbacks(root), "Rendering..."):
+    for callback in renderer.render_callbacks(root):
         rich.print(f":white_check_mark: [green]{callback()}[/green]")
 
 
@@ -115,7 +115,7 @@ def new(
     variables = cache.variables
     variables.update(get_variables(template.variables, ctx, variables_file))
     renderer = TemplateRenderer(template, ctx, variables)
-    for callback in track(renderer.render_callbacks(cache.root), "Rendering..."):
+    for callback in renderer.render_callbacks(cache.root):
         rich.print(f":white_check_mark: [green]{callback()}[/green]")
 
 
@@ -143,8 +143,9 @@ def install(
             files = [f for f in zip.infolist() if f.filename != "template.json"]
 
             t_path = template_path(template)
-
-            for f in track(files, "[cyan]Saving template files...[/cyan]"):
+            
+            rich.print("[cyan]Saving template files...[/cyan]")
+            for f in track(files, description="Extracting files..."):
                 zip.extract(f, t_path)
 
             with opendb() as db:
