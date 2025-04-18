@@ -16,3 +16,10 @@ dist/
 
 # Development
 dev*
+local/*
+local_*.*
+**/*.local.*
+templates/
+*.cache
+main.py
+.forgeit.json
