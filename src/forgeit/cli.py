@@ -63,12 +63,6 @@ def init(
     template_name: str = Argument(None, help="The template name to use"),
     variables_file: str = Argument(None, help="JSON File with the required variables"),
 ):
-    if os.path.exists(env.CACHE_FILE) and not Confirm.ask(
-        "Template data found. If you continue, this file will be overwritten and previous template might broke. Proceed?",
-        default=True,
-    ):
-        return
-
     with opendb() as db:
         template = db.get_template(template_name)
 
