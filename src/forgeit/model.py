@@ -57,7 +57,6 @@ class SubTemplate(BaseTemplate):
 class Cache:
     template: str
     variables: dict
-    root: str
 
 
 @model()

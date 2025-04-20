@@ -57,7 +57,7 @@ class __DatabaseContext:
         template.id = _id
         return template
 
-    def save_template(self, template: model.Template):
+    def save_template(self, template: model.Template, update: bool = False):
         if not template:
             raise ValueError("Can't store empty objects")
 
@@ -70,6 +70,22 @@ class __DatabaseContext:
         )
 
         cursor = self.__connection.cursor()
+        exists = cursor.execute(
+            "SELECT id FROM template WHERE name = ? AND active = 1 LIMIT 1",
+            (template.name,),
+        ).fetchone()
+
+        if exists:
+            if update:
+                cursor.execute(
+                    "UPDATE template SET name = ?, label = ?, description = ?, json = ?, active = ? WHERE id = ?",
+                    data + (exists[0],),
+                )
+                self.__connection.commit()
+                return
+            else:
+                raise Exception(f"Template {template.name} already exists")
+
         cursor.execute(
             "INSERT INTO template(name, label, description, json, active) VALUES (?,?,?,?,?)",
             data,
