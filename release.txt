@@ -1,2 +1,3 @@
-Version 0.1.0beta
-- Add tags
+Version 0.1.0beta2
+- Readme update
+- CLI update
