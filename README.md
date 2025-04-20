@@ -1,3 +1,7 @@
+<div style="text-align: center;">
+  <img src="https://kennethulloa.github.io/forgeit-assets/forgeit.png" width="300px">
+</div>
+
 # ForgeIt
 Scaffolding library written in Python. Jinja2 is used for template rendering and Typer for CLI.
 
