@@ -1,5 +1,5 @@
 <div style="text-align: center;">
-  <img src="https://kennethulloa.github.io/forgeit-assets/forgeit.png" width="300px">
+  <img src="https://kennethulloa.github.io/forgeit-assets/forgeit.png" width="300px" style="display: inline; margin: auto;">
 </div>
 
 # ForgeIt
