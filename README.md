@@ -1,9 +1,19 @@
+<p align="center">
+  <img src="https://kennethulloa.github.io/forgeit-assets/forgeit.png" width="120px">
+</p>
+
 # ForgeIt
 Scaffolding library written in Python. Jinja2 is used for template rendering and Typer for CLI.
 
 ## CLI Documentation
 
 It provides the following commands:
+
+### `setup`
+
+Tool initial setup. This command must be executed once after installation. This will perform all needed steps to enable you to use the tool.
+
+* Usage: `fg setup`
 
 ### `init`
 
@@ -19,16 +29,15 @@ Renders a template's fragment (subtemplate) using stored context `.forge.json` f
 
 ### `install`
 
-Installs a template description from a file path. It must be a ZIP File.
+Installs a template description from a file path. It can be a zip file or a directory path.
 
-The provided ZIP file must have the following structure:
+The provided ZIP/folder path file must have the following structure:
 ```
-[zip file]
-    templates/
-        # Files with jinja syntax
-    static/
-        # Files that will be cloned
-    template.json # Template schema/definition
+templates/
+  # Files with jinja syntax
+files/
+  # Files that will be cloned
+template.json # Template schema/definition
 ```
 
 * Usage: `fg install <path>`

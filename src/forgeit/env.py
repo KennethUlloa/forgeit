@@ -8,7 +8,7 @@ global APP_DIR
 APP_NAME = "forgeit"
 APP_DIR = "."
 CWD = os.getcwd()
-CACHE_FILE = os.path.join(CWD, f".{APP_NAME}.json")
+CACHE_FILE = f".{APP_NAME}.json"
 
 
 def init():

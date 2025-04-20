@@ -1,4 +1,5 @@
 import json
+import shutil
 import rich
 import os
 import zipfile
@@ -42,19 +43,21 @@ def get_variables(variables_schema: dict, ctx: Context, variables_file: str = No
 
 
 def load_cache():
-    if not os.path.exists(env.CACHE_FILE):
+    cache_path = os.path.join(os.getcwd(), env.CACHE_FILE)
+    if not os.path.exists(cache_path):
         return None
 
-    with read(env.CACHE_FILE) as f:
+    with read(cache_path) as f:
         return Cache(**json.load(f))
 
 
-def save_cache(cache: Cache):
+def save_cache(cache: Cache, root: str = None):
     cache_dict = asdict(cache)
     if "_ctx" in cache_dict["variables"]:
         cache_dict["variables"].pop("_ctx")
 
-    with save(env.CACHE_FILE) as f:
+    cache_path = os.path.join(root or os.getcwd(), env.CACHE_FILE)
+    with save(cache_path) as f:
         json.dump(cache_dict, f)
 
 
@@ -74,11 +77,11 @@ def init(
     ctx = env.create_context(root)
     variables = get_variables(template.variables, ctx, variables_file)
 
-    save_cache(Cache(template=template_name, variables=variables, root=root))
-
     renderer = TemplateRenderer(template, ctx, variables)
     for callback in renderer.render_callbacks(root):
         rich.print(f":white_check_mark: [green]{callback()}[/green]")
+    
+    save_cache(Cache(template=template_name, variables=variables), root)
 
 
 @app.command(
@@ -102,7 +105,15 @@ def new(
     if not parent_template:
         error(f"Malformed cache file: {cache.template} is not a valid template")
         return
-
+    
+    if not name:
+        rich.print(f"You must specify a subtemplate name.")
+        if len(parent_template.subtemplates) > 0:
+            rich.print("Available subtemplates:")
+        for name, data in parent_template.subtemplates.items():
+            rich.print(f"* [green]{name}[/green] {data['description']}")
+        return
+    
     if name not in parent_template.subtemplates:
         error(f"Subtemplate {name} wasn't found")
         return
@@ -111,11 +122,11 @@ def new(
         **parent_template.subtemplates[name], parent_name=parent_template.name
     )
 
-    ctx = env.create_context(cache.root)
+    ctx = env.create_context(".")
     variables = cache.variables
     variables.update(get_variables(template.variables, ctx, variables_file))
     renderer = TemplateRenderer(template, ctx, variables)
-    for callback in renderer.render_callbacks(cache.root):
+    for callback in renderer.render_callbacks("."):
         rich.print(f":white_check_mark: [green]{callback()}[/green]")
 
 
@@ -124,6 +135,7 @@ def install(
     path: str = Argument(
         None, help="Real path for the file containing the template description (.zip)"
     ),
+    update: bool = Option(False, help="Update an existing template"),
 ):
     if not os.path.exists(path):
         error("Path doesn't exists")
@@ -140,22 +152,48 @@ def install(
                 validate_template(template_data)
                 template = Template(**template_data)
 
+            with opendb() as db:
+                rich.print("[cyan]Saving template...[/cyan]")
+                db.save_template(template, update)
+
             files = [f for f in zip.infolist() if f.filename != "template.json"]
 
             t_path = template_path(template)
-            
+
             rich.print("[cyan]Saving template files...[/cyan]")
             for f in track(files, description="Extracting files..."):
                 zip.extract(f, t_path)
 
-            with opendb() as db:
-                rich.print("[cyan]Saving template...[/cyan]")
-                db.save_template(template)
-
         rich.print("Template installed successfully")
         return
 
-    rich.print("Invalid extension, expected: zip")
+    if os.path.isdir(path):
+        template_file_path = os.path.join(path, "template.json")
+
+        if not os.path.exists(template_file_path):
+            error("Template description file not found")
+            return
+
+        with open(os.path.join(path, "template.json"), "r") as f:
+            template_data = json.load(f)
+            validate_template(template_data)
+            template = Template(**template_data)
+
+            with opendb() as db:
+                db.save_template(template, update)
+
+        rich.print("[cyan]Saving template files...[/cyan]")
+        template_files_path = template_path(template)
+        for root, dirs, files in os.walk(path):
+            for file in files:
+                file_path = os.path.join(root, file)
+                relative_path = os.path.relpath(root, path)
+                destination_path = os.path.join(template_files_path, relative_path)
+                os.makedirs(destination_path, exist_ok=True)
+                shutil.copy2(file_path, destination_path)
+
+        rich.print("Template installed successfully")
+        return
 
 
 @app.command(help="Validate a template description")
@@ -265,6 +303,19 @@ def example():
             file.write(javascript_template.encode("utf-8"))
 
     rich.print("Example template created successfully")
+
+
+@app.command(help="First time setup")
+def setup():
+    from importlib.resources import files
+
+    source = files("forgeit").joinpath("data/flask-api.zip")
+    os.makedirs("./temp", exist_ok=True)
+    shutil.copy(source, "./temp/flask-api.zip")
+
+    install("./temp/flask-api.zip", True)
+
+    shutil.rmtree("./temp")
 
 
 if __name__ == "__main__":
