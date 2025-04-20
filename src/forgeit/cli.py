@@ -105,7 +105,15 @@ def new(
     if not parent_template:
         error(f"Malformed cache file: {cache.template} is not a valid template")
         return
-
+    
+    if not name:
+        rich.print(f"You must specify a subtemplate name.")
+        if len(parent_template.subtemplates) > 0:
+            rich.print("Available subtemplates:")
+        for name, data in parent_template.subtemplates.items():
+            rich.print(f"* [green]{name}[/green] {data['description']}")
+        return
+    
     if name not in parent_template.subtemplates:
         error(f"Subtemplate {name} wasn't found")
         return
@@ -295,6 +303,19 @@ def example():
             file.write(javascript_template.encode("utf-8"))
 
     rich.print("Example template created successfully")
+
+
+@app.command(help="First time setup")
+def setup():
+    from importlib.resources import files
+
+    source = files("forgeit").joinpath("data/flask-api.zip")
+    os.makedirs("./temp", exist_ok=True)
+    shutil.copy(source, "./temp/flask-api.zip")
+
+    install("./temp/flask-api.zip", True)
+
+    shutil.rmtree("./temp")
 
 
 if __name__ == "__main__":

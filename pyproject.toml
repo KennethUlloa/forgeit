@@ -1,6 +1,6 @@
 [project]
 name = "forgeit"
-version = "0.1.0.beta1"
+version = "0.1.0.beta2"
 authors = [
   { name="Kenneth Ulloa", email="ulloakenth@gmail.com" },
 ]
@@ -34,3 +34,6 @@ fg = "forgeit.cli:app"
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-data]
+"forgeit" = ["data/**/*"]
