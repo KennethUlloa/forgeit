@@ -95,8 +95,10 @@ def template_path(template: Template):
     return os.path.normpath(
         os.path.join(
             env.APP_DIR,
-            template.parent_name
-            if isinstance(template, SubTemplate)
-            else template.name,
+            (
+                template.parent_name
+                if isinstance(template, SubTemplate)
+                else template.name
+            ),
         )
     )

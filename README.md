@@ -5,27 +5,74 @@
 # ForgeIt
 Scaffolding library written in Python. Jinja2 is used for template rendering and Typer for CLI.
 
+## Installation
+In a terminal run
+
+```shell
+# Windows
+pip install forgeit
+# MacOS/Linux
+pip3 install forgeit
+```
+
+If you prefer, you could build the tool locally.
+  1. Clone this repository
+  2. Go to the project folder with `cd forgeit/`
+  3. Activate a virtual environment (recommended)
+      
+      ```shell
+      # Windows
+      python -m venv .venv
+      .venv/Scripts/activate
+      # MacOS/Linux
+      python3 -m venv .venv
+      source .venv/bin/activate
+      ```
+    
+  4. Install `build` package
+
+      ```shell
+      # Windows
+      pip install build
+      # MacOS/Linux
+      pip3 install build
+      ```
+
+  5. Build the project
+      ```shell
+      # Windows
+      python -m build
+      # MacOS/Linux
+      python3 -m build
+      ```
+  
+  6. Deactivate the virtual environment (optional, perform this step if you want global installation).
+  
+  7. Install `forgeit`
+
+      ```shell
+      # Windows
+      pip install dist/<tar or whl>
+      # MacOS/Linux
+      pip3 install dist/<tar or whl>
+      ```
+  
+
 ## CLI Documentation
 
 It provides the following commands:
-
-### `setup`
-
-Tool initial setup. This command must be executed once after installation. This will perform all needed steps to enable you to use the tool.
-
-* Usage: `fg setup`
 
 ### `init`
 
 Render a template's files given a name. If no variables file is given, the user will be prompted to enter them manually.
 
-* Usage: `fg init <name> [<file>]`
+* Usage: `forgeit init <name> [<file>]`
 
 ### `new`
 
 Renders a template's fragment (subtemplate) using stored context `.forge.json` file. If no variables file is given, the user will be prompted to enter the manually.
 
-* Usage: `fg new <name> [<file>]`
+* Usage: `forgeit new <name> [<file>]`
 
 ### `install`
 
@@ -40,33 +87,33 @@ files/
 template.json # Template schema/definition
 ```
 
-* Usage: `fg install <path>`
+* Usage: `forgeit install <path>`
 
 ### `list`
 
 Lists all the available templates.
 
-* Usage: `fg list`
+* Usage: `forgeit list`
 
 
 ### `version`
 
 Displays the current version of the tool.
 
-* Usage: `fg version`
+* Usage: `forgeit version`
 
 ### `validate`
 
 Validate a template description. It must be a JSON file.
 
-* Usage: `fg validate <file>`
+* Usage: `forgeit validate <file>`
 
 ### `example`
 
 Create an example template. It will create a ZIP file containing a basic layout of a 
 valid template in the current working directory. You could install it to use it if you want.
 
-* Usage `fg example`
+* Usage `forgeit example`
 
 ## Template Schema
 

@@ -7,7 +7,7 @@ template_schema = {
     "type": "object",
     "required": ["name", "label", "variables", "content"],
     "properties": {
-        "name": {"type": "string"},
+        "name": {"type": "string", "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*[a-zA-Z0-9]$"},
         "label": {"type": "string"},
         "description": {"type": "string"},
         "variables": {

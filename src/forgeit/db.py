@@ -1,8 +1,9 @@
+import shutil
 import sqlite3
 import os
 import json
 from dataclasses import asdict
-from . import env, model, utils
+from . import env, model
 
 
 def serialize(template: model.Template) -> str:
@@ -27,7 +28,8 @@ class __DatabaseContext:
     def __load_connection(self):
         self.__connection = sqlite3.connect(self.__connection_string)
         cursor = self.__connection.cursor()
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS template (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT UNIQUE NOT NULL,
@@ -36,7 +38,8 @@ class __DatabaseContext:
                 active INTEGER NOT NULL DEFAULT 1,
                 json TEXT NOT NULL
             )
-        """)
+        """
+        )
         self.__connection.commit()
         return self.__connection
 
@@ -101,6 +104,17 @@ class __DatabaseContext:
             )
             for row in res
         ]
+
+    def delete_template(self, template_name: str) -> bool:
+        cursor = self.__connection.cursor()
+        res = cursor.execute("DELETE FROM template WHERE name = ?", (template_name,))
+
+        template_files_path = os.path.join(env.APP_DIR, template_name)
+        if os.path.exists(template_files_path):
+            shutil.rmtree(template_files_path, ignore_errors=True)
+
+        self.__connection.commit()
+        return res.rowcount > 0
 
     def __enter__(self):
         self.__load_connection()
