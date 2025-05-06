@@ -56,7 +56,25 @@ If you prefer, you could build the tool locally.
       # MacOS/Linux
       pip3 install dist/<tar or whl>
       ```
-  
+
+### First steps
+
+After the installation you will have no templates. In order to start using it you should install the example template to explore the tool's functionalities.
+
+```shell
+forgeit example
+forgeit install example.zip
+forget init flask-api
+```
+The tool will ask you to enter some values and then a simple API project using Flask, SQLAlchemy and Marshmallow will be created. 
+
+Run `flask run` in the project directory. You should see the project starting. By default CRUD operations will be available at `/api/users` including a simple login.
+
+To extend the application run `forgeit new entity`. You will be prompted to enter the structure for the new entity and then all the scaffold will be created.
+
+In the method `register_controller` in the `app.py` file, include the controller for your entity like this `from controllers.<entity_name> import <entity_name>_controller` and pass it to the array of controllers `[user_controller, <entity_name>_controller]`.
+
+
 
 ## CLI Documentation
 
@@ -114,6 +132,12 @@ Create an example template. It will create a ZIP file containing a basic layout 
 valid template in the current working directory. You could install it to use it if you want.
 
 * Usage `forgeit example`
+
+### `delete`
+
+Deletes a installed template using its name.
+
+* Usage `forgeit delete <template name>`
 
 ## Template Schema
 
